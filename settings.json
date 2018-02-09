@@ -1,0 +1,10 @@
+{
+    "Phi": 0.9,
+    "BatchSize": 1000,
+    "InitTemp": 8.0,
+    "EpsilonT": 0.2,
+    "EpsilonP": 0.004,
+    "AcceptedPercent": 0.95,
+    "InitialTempN": 2000,
+    "PathToAnneal": [498,200,117,178,830,857]
+}

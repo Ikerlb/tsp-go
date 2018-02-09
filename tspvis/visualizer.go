@@ -5,22 +5,6 @@ import (
     "os"
 )
 
-//		cities.push({ name: \"Toyonaka\", country: \"Japan\", coordinates: [34.7833,135.467] });
-//		cities.push({ name: \"Yanji\", country: \"China\", coordinates: [42.7714,129.423] });
-
-
-//				{\"latitudes\": [cities[38][\"coordinates\"][0], cities[39][\"coordinates\"][0] ], \"longitudes\": [ cities[38][\"coordinates\"][1], cities[39][\"coordinates\"][1]  ]}, 
-//				{\"latitudes\": [cities[37][\"coordinates\"][0], cities[38][\"coordinates\"][0] ], \"longitudes\": [ cities[37][\"coordinates\"][1], cities[38][\"coordinates\"][1]  ]},
-
-//		    
-//		    {
-//		      \"svgPath\": targetSVG,
-//	  	        \"title\": cities[0][\"name\"]+\", \"+cities[0][\"country\"],
-//		        \"latitude\": cities[0][\"coordinates\"][0],
-//		        \"longitude\": cities[0][\"coordinates\"][1],
-//		        \"scale\": 1
-//		    }, 
-
 func check(e error) {
     if e != nil {
     	fmt.Println(e)

@@ -7,7 +7,7 @@ import(
     "encoding/json"
     "github.com/ikerlb/tsp-go/tspvis"
     "github.com/ikerlb/tsp-go/tsp"
-    "math/rand"
+    //"math/rand"
     "flag"
     "database/sql"
     "fmt"
@@ -19,17 +19,36 @@ type SolutionSet struct {
     Set []int `json:"Set"`
 }
 
+type Settings struct{
+    Phi             float64 `json:"Phi"`
+    BatchSize       int     `json:"BatchSize"`
+    InitTemp        float64 `json:"InitTemp"`
+    EpsilonT        float64 `json:"EpsilonT"`
+    EpsilonP        float64 `json:"EpsilonP"`
+    AcceptedPercent float64 `json:"AcceptedPercent"`
+    InitialTempN    int     `json:"InitialTempN"`
+    PathToAnneal    []int   `json:"PathToAnneal"`
+}
+
 const citiesLength=1092
 
 var (
-        SeedNumber   int    //Number of seeds to run.
-        FirstSeed    int    //Defines range of seeds: [FirstSeed,FirstSeed+SeedNumber]
-        CreateGraphs bool   //Create annealing graph in util/graphs. (1 per seed)
-        Visualizer   string //json file with 'solution' to parse and show in map
-        SettingsFile string //json file with annealer parameters and cities set. defaults to ./settings.json in  
-        Cities       []tspvis.City
-        Distances    [][]float64
-        SolutionIds    []int
+        SeedNumber      int    //Number of seeds to run.
+        FirstSeed       int    //Defines range of seeds: [FirstSeed,FirstSeed+SeedNumber]
+        CreateGraphs    bool   //Create annealing graph in util/graphs. (1 per seed)
+        Visualizer      string //json file with 'solution' to parse and show in map
+        SettingsFile    string //json file with annealer parameters and cities set. defaults to ./settings.json
+        Cities          []tspvis.City
+        Distances       [][]float64
+        SolutionIds     []int
+        Phi             float64
+        BatchSize       int     
+        InitTemp        float64 
+        EpsilonT        float64 
+        EpsilonP        float64 
+        AcceptedPercent float64 
+        InitialTempN    int
+        PathToAnneal    []int     
 )
 
 func main() {
@@ -51,10 +70,13 @@ func main() {
         tspvis.Visualizer(Cities,Distances,SolutionIds)
         os.Exit(3) //exit as you are in visualization mode.
     }
-    rand.Seed(42)
-    fmt.Println("My favorite number is", rand.Intn(10))
-    tsp.Rand_num()
-
+    fmt.Println("Extracting parameters from settings file:",SettingsFile)
+    parseSettings()
+    //NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, acceptedPercent float64, batchSize, initialTempN int)
+    ann:=tsp.NewAnnealer(PathToAnneal, Distances, Phi, InitTemp, EpsilonT, EpsilonP, AcceptedPercent, BatchSize, InitialTempN)
+    for i := FirstSeed; i < FirstSeed+SeedNumber; i++ {
+        ann.AnnealWithSeed(int64(i))
+    }
 }
 
 /*
@@ -99,7 +121,7 @@ func getDistances(){
     }   
 }
 
-//close db
+//close db, rows
 func getCities(){
     db, err := sql.Open("sqlite3", "db/tsp.db")
     check(err)
@@ -112,11 +134,30 @@ func getCities(){
         Cities[i]=city
     }
 }
+//Phi,BatchSize,InitialTemp,EpsilonP,EpsilonT,AcceptedPercent,InitialTempN,PathToAnneal
+func parseSettings(){
+    file, err := os.Open(SettingsFile)
+    check(err)
+    fmt.Println("Successfully Opened",SettingsFile)
+    sett:=Settings{}
+    decoder := json.NewDecoder(file) 
+    err = decoder.Decode(&sett) 
+    check(err)
+    Phi=sett.Phi
+    BatchSize=sett.BatchSize
+    InitTemp=sett.InitTemp
+    EpsilonT=sett.EpsilonT
+    EpsilonP=sett.EpsilonP
+    AcceptedPercent=sett.AcceptedPercent
+    InitialTempN=sett.InitialTempN
+    PathToAnneal=sett.PathToAnneal
+    // defer the closing of our jsonFile so that we can parse it later on
+    file.Close()
+    fmt.Println("Succesfully extracted Settings:",sett," from json file:",SettingsFile)
+}
 
 func parseSolution(){
-    // Open our jsonFile
     file, err := os.Open(Visualizer)
-    // if os.Open returns an error then handle it
     check(err)
     fmt.Println("Successfully Opened",Visualizer)
     sol:=SolutionSet{}
