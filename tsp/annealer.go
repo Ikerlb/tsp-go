@@ -4,7 +4,14 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 )
+
+type SolutionLite struct{
+	Path 	 string
+ 	Cost 	 float64
+	Feasible string
+}
 
 type Annealer struct{
 	Rng				*rand.Rand
@@ -17,9 +24,9 @@ type Annealer struct{
 	EpsilonP  		float64
 	AcceptedPercent float64
 	InitialTempN	int
+	BestSolution 	*SolutionLite
 	// CurrentSolution *Solution
 }
-
 
 func NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, acceptedPercent float64, batchSize, initialTempN int) *Annealer {
 	annealer:=Annealer{}
@@ -32,6 +39,7 @@ func NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, 
 	annealer.EpsilonP=epsilonP
 	annealer.AcceptedPercent=acceptedPercent
 	annealer.InitialTempN=initialTempN
+	annealer.BestSolution=&SolutionLite{Cost:math.Inf(0)}
 	return &annealer
 }
 
@@ -49,24 +57,28 @@ func (annealer *Annealer) AnnealWithSeed(seed int64){
 	s:=NewSolution(newPath,annealer.Dists)
 	t:=annealer.initialTemperature(s,annealer.InitTemp)
 	//fmt.Printf("Starting tresholdAccept with temp %f and initial solution: %v",t,s)
-	annealer.tresholdAccept(t,s)
+	annealer.tresholdAccept(t,s,seed)
 }
 
-func (annealer *Annealer) tresholdAccept(t float64, s *Solution){
+func (annealer *Annealer) tresholdAccept(t float64, s *Solution, seed int64){
 	//InitTemp=initialTemperature()
+	annealer.BestSolution.Cost=math.Inf(0)
+	annealer.BestSolution.Path=""
+	annealer.BestSolution.Feasible=""
 	var p float64
-	for t>annealer.EpsilonT {
+	var k int
+	for t>annealer.EpsilonT&&k<20 {
 		q:=math.Inf(0)
-		for p<=q {
+		for k=0;p<=q&&k<20;k++ {
 			q=p
+			// fmt.Println("Entering calculate batch",k)
 			p,s=annealer.calculateBatch(t,s)
 		}
 		//fmt.Printf("Decreasing temperature t: %f by %f: %f\n",t,annealer.Phi,annealer.Phi*t)
 		t*=annealer.Phi
 	}
-	if s.IsFeasible()&&s.Cost<0.9{
-		fmt.Println(s)
-	}
+	fmt.Printf("Seed: %d, Solution: %s\n",seed,annealer.BestSolution)
+
 }
 
 func (annealer *Annealer) calculateBatch(t float64, sol *Solution) (float64,*Solution){
@@ -74,12 +86,20 @@ func (annealer *Annealer) calculateBatch(t float64, sol *Solution) (float64,*Sol
 	c:=0
 	var s *Solution
 	s=sol
-	//TODO implement max number of tries
-	for c<annealer.BatchSize {
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! This line of code along with phi 99 and epsilonT 0.002 seed 1 and batchsize 1000 produces best solution yet. It has a wrong logic though
+	//for k:=0;c<annealer.BatchSize||k<annealer.BatchSize*100;k++ {
+	for k:=0;c<annealer.BatchSize&&k<annealer.BatchSize*100;k++ {
+	//for k:=0;k<annealer.BatchSize*100;k++{
 		i,j:=generateRandomIdx(len(annealer.Path),annealer.Rng)
 		sPrimeCost=s.PeekNeighborCost(i,j)
+		// if t<=0.003330{
+		// 	fmt.Println("Looping in Calculate batch",k)
+		// }
 		if sPrimeCost<=(s.Cost+t) {
 			s=s.Neighbor(i,j,sPrimeCost)
+			if sPrimeCost<annealer.BestSolution.Cost {
+				annealer.BestSolution=NewSolutionLite(s)
+			}
 			c++
 			r+=sPrimeCost
 		}
@@ -156,4 +176,16 @@ func generateRandomIdx(size int,rng *rand.Rand) (int,int){
 		j=rng.Intn(size)
 	}
 	return i,j
+}
+
+func NewSolutionLite(sol *Solution) *SolutionLite{
+	solLite:=SolutionLite{}
+	solLite.Path=strings.Replace(fmt.Sprintf("%v",sol.Path)," ",",",-1)
+	solLite.Cost=sol.Cost
+	solLite.Feasible=fmt.Sprintf("%v",sol.Feasible)
+	return &solLite
+}
+
+func (sol *SolutionLite) String() string{
+	return fmt.Sprintf("Path: %s, Cost: %f, Feasible: %s",sol.Path,sol.Cost,sol.Feasible)
 }
