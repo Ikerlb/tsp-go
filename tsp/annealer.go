@@ -43,6 +43,10 @@ func NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, 
 	return &annealer
 }
 
+
+//TODO: Implement logging mechanism eg verbose flag -v very verbose flag -vv
+//TODO: Implement time checks to define metrics for parameters
+//TODO: Graph!!
 func (annealer *Annealer) AnnealWithSeed(seed int64){
 	annealer.Rng = rand.New(rand.NewSource(seed))
 	//Shuffle array.
@@ -60,41 +64,47 @@ func (annealer *Annealer) AnnealWithSeed(seed int64){
 	annealer.tresholdAccept(t,s,seed)
 }
 
+//TODO: Play with k
 func (annealer *Annealer) tresholdAccept(t float64, s *Solution, seed int64){
 	//InitTemp=initialTemperature()
 	annealer.BestSolution.Cost=math.Inf(0)
 	annealer.BestSolution.Path=""
 	annealer.BestSolution.Feasible=""
 	var p float64
-	var k int
-	for t>annealer.EpsilonT&&k<20 {
+	stop:=false
+	for t>annealer.EpsilonT {
 		q:=math.Inf(0)
-		for k=0;p<=q&&k<20;k++ {
+		for p<=q&&(!stop) {
 			q=p
 			// fmt.Println("Entering calculate batch",k)
-			p,s=annealer.calculateBatch(t,s)
+			p,s,stop=annealer.calculateBatch(t,s)
+			if stop {
+				break
+			}
 		}
 		//fmt.Printf("Decreasing temperature t: %f by %f: %f\n",t,annealer.Phi,annealer.Phi*t)
 		t*=annealer.Phi
+		if stop {
+			break
+		}
 	}
 	fmt.Printf("Seed: %d, Solution: %s\n",seed,annealer.BestSolution)
 
 }
 
-func (annealer *Annealer) calculateBatch(t float64, sol *Solution) (float64,*Solution){
+//batchSize*100??? 
+func (annealer *Annealer) calculateBatch(t float64, sol *Solution) (float64,*Solution,bool){
 	var r,sPrimeCost float64
 	c:=0
 	var s *Solution
 	s=sol
+	k:=0
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! This line of code along with phi 99 and epsilonT 0.002 seed 1 and batchsize 1000 produces best solution yet. It has a wrong logic though
 	//for k:=0;c<annealer.BatchSize||k<annealer.BatchSize*100;k++ {
-	for k:=0;c<annealer.BatchSize&&k<annealer.BatchSize*100;k++ {
+	for k=0;c<annealer.BatchSize&&k<annealer.BatchSize*100;k++ {
 	//for k:=0;k<annealer.BatchSize*100;k++{
 		i,j:=generateRandomIdx(len(annealer.Path),annealer.Rng)
 		sPrimeCost=s.PeekNeighborCost(i,j)
-		// if t<=0.003330{
-		// 	fmt.Println("Looping in Calculate batch",k)
-		// }
 		if sPrimeCost<=(s.Cost+t) {
 			s=s.Neighbor(i,j,sPrimeCost)
 			if sPrimeCost<annealer.BestSolution.Cost {
@@ -104,9 +114,10 @@ func (annealer *Annealer) calculateBatch(t float64, sol *Solution) (float64,*Sol
 			r+=sPrimeCost
 		}
 	}
-	return (r/float64(annealer.BatchSize)),s
+	return (r/float64(annealer.BatchSize)),s,k>=(annealer.BatchSize*100)-1
 }
 
+//Temperature heavily relies on punishment factor. Get feedback.
 func (annealer *Annealer) initialTemperature(sol *Solution,t float64) float64 {
 	var t1,t2 float64
 	//fmt.Println("Going into acceptedPercent with P=",annealer.AcceptedPercent)

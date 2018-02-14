@@ -184,7 +184,7 @@ func (sol *Solution) Neighbor(i,j int,cost float64) (*Solution){
 	return sol
 }
 
-//the way we defined the bitset for feasibility is: if there is no path from i to i+1, we set i. thus no bit set implies feasibility
+//the way we defined the bitset for feasibility is: if there is no path from i to i+1, we set i. thus no bit set implies feasible i to i+1 path
 func (sol *Solution) IsFeasible() bool{
 	return sol.Feasible.None()
 }
