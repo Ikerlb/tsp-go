@@ -25,10 +25,11 @@ type Annealer struct{
 	AcceptedPercent float64
 	InitialTempN	int
 	BestSolution 	*SolutionLite
+	Sweeping		bool
 	// CurrentSolution *Solution
 }
 
-func NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, acceptedPercent float64, batchSize, initialTempN int) *Annealer {
+func NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, acceptedPercent float64, batchSize, initialTempN int, sweeping bool) *Annealer {
 	annealer:=Annealer{}
 	annealer.Path=path
 	annealer.Dists=dists
@@ -40,6 +41,7 @@ func NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, 
 	annealer.AcceptedPercent=acceptedPercent
 	annealer.InitialTempN=initialTempN
 	annealer.BestSolution=&SolutionLite{Cost:math.Inf(0)}
+	annealer.Sweeping=sweeping
 	return &annealer
 }
 
@@ -72,27 +74,26 @@ func (annealer *Annealer) tresholdAccept(t float64, s *Solution, seed int64){
 	annealer.BestSolution.Feasible=""
 	var p float64
 	stop:=false
-	for t>annealer.EpsilonT {
+	if annealer.Sweeping{
+		annealer.sweepSolution(s)
+	}
+	for t>annealer.EpsilonT&&(!stop) {
 		q:=math.Inf(0)
 		for p<=q&&(!stop) {
 			q=p
 			// fmt.Println("Entering calculate batch",k)
 			p,s,stop=annealer.calculateBatch(t,s)
-			if stop {
-				break
-			}
 		}
 		//fmt.Printf("Decreasing temperature t: %f by %f: %f\n",t,annealer.Phi,annealer.Phi*t)
 		t*=annealer.Phi
-		if stop {
-			break
-		}
 	}
-	fmt.Printf("Seed: %d, Solution: %s\n",seed,annealer.BestSolution)
-
+	if annealer.BestSolution.Cost < 0.27 {
+		fmt.Printf("Seed: %d, Solution: %s\n",seed,annealer.BestSolution)
+	}
 }
 
 //batchSize*100??? 
+//Implement sweeping
 func (annealer *Annealer) calculateBatch(t float64, sol *Solution) (float64,*Solution,bool){
 	var r,sPrimeCost float64
 	c:=0
@@ -107,14 +108,33 @@ func (annealer *Annealer) calculateBatch(t float64, sol *Solution) (float64,*Sol
 		sPrimeCost=s.PeekNeighborCost(i,j)
 		if sPrimeCost<=(s.Cost+t) {
 			s=s.Neighbor(i,j,sPrimeCost)
-			if sPrimeCost<annealer.BestSolution.Cost {
-				annealer.BestSolution=NewSolutionLite(s)
-			}
 			c++
 			r+=sPrimeCost
+			if sPrimeCost<annealer.BestSolution.Cost {
+				annealer.BestSolution=NewSolutionLite(s)
+				if annealer.Sweeping {
+					annealer.sweepSolution(s)
+				}
+			}
 		}
 	}
 	return (r/float64(annealer.BatchSize)),s,k>=(annealer.BatchSize*100)-1
+}
+
+//ask the following!!
+//Are you to update the solution with the neighbor when given a better one? doesn't that conflict with what the sweeping is supposed to do?
+func (annealer *Annealer) sweepSolution(sol *Solution){
+	size:=len(annealer.Path)
+	var sPrimeCost float64
+	for i:=0;i<size;i++{
+		for j:=i+1;j<size;j++{
+			sPrimeCost=sol.PeekNeighborCost(i,j)
+			if sPrimeCost < annealer.BestSolution.Cost {
+				sol=sol.Neighbor(i,j,sPrimeCost)
+				annealer.BestSolution=NewSolutionLite(sol)
+			}
+		}
+	}
 }
 
 //Temperature heavily relies on punishment factor. Get feedback.

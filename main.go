@@ -49,6 +49,7 @@ var (
         AcceptedPercent float64 
         InitialTempN    int
         PathToAnneal    []int     
+        Sweeping        bool
 )
 
 func main() {
@@ -73,7 +74,7 @@ func main() {
     fmt.Println("Extracting parameters from settings file:",SettingsFile)
     parseSettings()
     //NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, acceptedPercent float64, batchSize, initialTempN int)
-    ann:=tsp.NewAnnealer(PathToAnneal, Distances, Phi, InitTemp, EpsilonT, EpsilonP, AcceptedPercent, BatchSize, InitialTempN)
+    ann:=tsp.NewAnnealer(PathToAnneal, Distances, Phi, InitTemp, EpsilonT, EpsilonP, AcceptedPercent, BatchSize, InitialTempN, Sweeping)
     for i := FirstSeed; i < FirstSeed+SeedNumber; i++ {
         ann.AnnealWithSeed(int64(i))
     }
@@ -89,6 +90,7 @@ func init() {
     flag.BoolVar(&CreateGraphs, "g", false, "create annealing graphs in util/graphs (1 per seed)")
     flag.StringVar(&Visualizer, "v", "", "Json file with 'solution' to parse and show in map.")
     flag.StringVar(&SettingsFile, "s", "settings.json", "Json file with annealer parameters and cities set to solve.")
+    flag.BoolVar(&Sweeping, "b", false, "anneal with sweeping. defaults to false.")
 }
 
 func check(e error) {
