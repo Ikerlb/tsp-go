@@ -47,7 +47,6 @@ func NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, 
 
 
 //TODO: Implement logging mechanism eg verbose flag -v very verbose flag -vv
-//TODO: Implement time checks to define metrics for parameters
 //TODO: Graph!!
 func (annealer *Annealer) AnnealWithSeed(seed int64){
 	annealer.Rng = rand.New(rand.NewSource(seed))
@@ -87,23 +86,19 @@ func (annealer *Annealer) tresholdAccept(t float64, s *Solution, seed int64){
 		//fmt.Printf("Decreasing temperature t: %f by %f: %f\n",t,annealer.Phi,annealer.Phi*t)
 		t*=annealer.Phi
 	}
-	if annealer.BestSolution.Cost < 0.27 {
-		fmt.Printf("Seed: %d, Solution: %s\n",seed,annealer.BestSolution)
+	if annealer.BestSolution.Cost<0.27{
+		fmt.Printf("\nSeed: %d, Solution: %s\n",seed,annealer.BestSolution)
 	}
 }
 
 //batchSize*100??? 
-//Implement sweeping
 func (annealer *Annealer) calculateBatch(t float64, sol *Solution) (float64,*Solution,bool){
 	var r,sPrimeCost float64
 	c:=0
 	var s *Solution
 	s=sol
 	k:=0
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! This line of code along with phi 99 and epsilonT 0.002 seed 1 and batchsize 1000 produces best solution yet. It has a wrong logic though
-	//for k:=0;c<annealer.BatchSize||k<annealer.BatchSize*100;k++ {
 	for k=0;c<annealer.BatchSize&&k<annealer.BatchSize*100;k++ {
-	//for k:=0;k<annealer.BatchSize*100;k++{
 		i,j:=generateRandomIdx(len(annealer.Path),annealer.Rng)
 		sPrimeCost=s.PeekNeighborCost(i,j)
 		if sPrimeCost<=(s.Cost+t) {
@@ -137,7 +132,6 @@ func (annealer *Annealer) sweepSolution(sol *Solution){
 	}
 }
 
-//Temperature heavily relies on punishment factor. Get feedback.
 func (annealer *Annealer) initialTemperature(sol *Solution,t float64) float64 {
 	var t1,t2 float64
 	//fmt.Println("Going into acceptedPercent with P=",annealer.AcceptedPercent)

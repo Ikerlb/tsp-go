@@ -12,6 +12,7 @@ import(
     "database/sql"
     "fmt"
     "os"
+    "time"
     _ "github.com/mattn/go-sqlite3"
 )
 
@@ -76,7 +77,10 @@ func main() {
     //NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, acceptedPercent float64, batchSize, initialTempN int)
     ann:=tsp.NewAnnealer(PathToAnneal, Distances, Phi, InitTemp, EpsilonT, EpsilonP, AcceptedPercent, BatchSize, InitialTempN, Sweeping)
     for i := FirstSeed; i < FirstSeed+SeedNumber; i++ {
+        start:=time.Now()
         ann.AnnealWithSeed(int64(i))
+        t:=time.Now()
+        fmt.Printf("Seed %d took %v seconds.\n",i,t.Sub(start))
     }
 }
 

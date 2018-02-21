@@ -2,11 +2,9 @@ package tsp
 
 import (
 	"fmt"
-	//"math/rand"
 	"github.com/willf/bitset"
 )
 
-//FIX FEASIBLE!!
 type Solution struct{
 	avgDist	 float64
 	maxDist	 float64
