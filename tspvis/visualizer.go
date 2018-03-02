@@ -3,6 +3,9 @@ package tspvis
 import (
 	"fmt"
     "os"
+    //"math"
+    // "github.com/wcharczuk/go-chart"
+    // "github.com/wcharczuk/go-chart/seq"
 )
 
 func check(e error) {
@@ -38,3 +41,55 @@ func Visualizer(cities []City, distances [][]float64, citiesIds []int) {
 	check(err)
 	fmt.Printf("Created file ./util/visualizer/js/map.js. Wrote %d bytes\n",n)
 }
+
+
+/*
+				XValues: seq.Range(0, 127),
+				YValues: seq.New(seq.NewRandom().WithLen(128).WithMax(1024)).Array(),
+				res.Header().Set("Content-Type", chart.ContentTypeSVG)
+				err := pie.Render(chart.SVG, res)
+*/
+// func MakeGraph(costs []float64, seed int) {
+// 	batchSize:=50000
+// 	hinit:="<!DOCTYPE HTML><html><head><script type=\"text/javascript\">"
+// 	fp:=fmt.Sprintf("./util/graphs/%d.html",seed)
+// 	f, err := os.Create(fp)
+// 	check(err)
+// 	onl:=fmt.Sprintf("window.onload = function() {\nvar chart = new CanvasJS.Chart(\"chartContainer\",\n{\nzoomEnabled: true,\ntitle:{\ntext: \"Seed %d\"\n},\naxisY:{\nincludeZero: false\n},\ndata: data,\n});\nchart.render();\n}\n",seed)
+// 	linit:="var data = [];\nvar dataSeries = {type:\"line\",};\nvar dataPoints = [];\n"
+// 	fmt.Println("Entering main loop with costs array of size:",len(costs))
+// 	s:=hinit+onl+linit
+// 	fmt.Println("Writing header...")
+// 	_, err = f.WriteString(s)
+// 	check(err)
+// 	i:=0
+// 	for ;i<len(costs);i++{
+// 		lmain:=""
+// 		for j:=0;j<batchSize;j++{
+// 			if costs[i] < 0.0 {
+// 				lmain+=fmt.Sprintf("dataPoints.push({x:%d,y:%f,color:\"Red\",markerSize: 5,markerType:\"circle\",});\n",i,math.Abs(costs[i]))
+// 			} else{
+// 				lmain+=fmt.Sprintf("dataPoints.push({x:%d,y:%f});\n",i,costs[i])
+// 			}
+// 			i++
+// 		}
+// 		fmt.Printf("Writing main loop %d lines out of %d lines...\n",i,len(costs))
+// 		_, err = f.WriteString(lmain)
+// 		check(err)
+// 	}
+// 	hend:="dataSeries.dataPoints = dataPoints;\ndata.push(dataSeries);\n</script>\n<script type=\"text/javascript\" src=\"https://canvasjs.com/assets/script/canvasjs.min.js\"></script>\n</head>\n<body>\n<div id=\"chartContainer\" style=\"height: 100%; width: 100%;\"></div>\n</body>\n</html>\n"
+// 	// graph := chart.Chart{
+// 	// 	Series: []chart.Series{
+// 	// 		chart.ContinuousSeries{
+// 	// 			XValues: seq.RangeWithStep(0, float64(len(costs))-1, 1),
+// 	// 			//XValues: seq.Range(0,float64(len(costs))),
+// 	// 			YValues: costs,
+// 	// 		},
+// 	// 	},
+// 	// }
+// 	// graph.Render(chart.SVG, f)
+// 	fmt.Println("Writing rest...")
+// 	n, err := f.WriteString(hend)
+// 	check(err)
+// 	fmt.Printf("Created file %s. Wrote %d bytes\n",fp,n)
+//}

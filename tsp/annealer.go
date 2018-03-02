@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"strings"
+	//"log"
 )
 
 type SolutionLite struct{
@@ -26,15 +27,18 @@ type Annealer struct{
 	InitialTempN	int
 	BestSolution 	*SolutionLite
 	Sweeping		bool
+	VeryVerbose 	bool
+	BatchLimit		int
 	// CurrentSolution *Solution
 }
 
-func NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, acceptedPercent float64, batchSize, initialTempN int, sweeping bool) *Annealer {
+func NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, acceptedPercent float64, batchSize, initialTempN, batchLimit int, sweeping, veryverbose bool) *Annealer {
 	annealer:=Annealer{}
 	annealer.Path=path
 	annealer.Dists=dists
 	annealer.Phi=phi
 	annealer.BatchSize=batchSize
+	annealer.BatchLimit=batchLimit
 	annealer.InitTemp=initTemp
 	annealer.EpsilonT=epsilonT
 	annealer.EpsilonP=epsilonP
@@ -42,22 +46,22 @@ func NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, 
 	annealer.InitialTempN=initialTempN
 	annealer.BestSolution=&SolutionLite{Cost:math.Inf(0)}
 	annealer.Sweeping=sweeping
+	annealer.VeryVerbose=veryverbose
 	return &annealer
 }
 
 
 //TODO: Implement logging mechanism eg verbose flag -v very verbose flag -vv
-//TODO: Graph!!
 func (annealer *Annealer) AnnealWithSeed(seed int64){
 	annealer.Rng = rand.New(rand.NewSource(seed))
+
 	//Shuffle array.
-	//fmt.Println("Path to anneal is",annealer.Path)
 	newPath := make([]int, len(annealer.Path))
 	perm := annealer.Rng.Perm(len(annealer.Path))
 	for i, v := range perm {
 	    newPath[v] = annealer.Path[i]
 	}
-	//fmt.Println("Shuffled path is",newPath)
+
 	//Given seed initialize random current solution
 	s:=NewSolution(newPath,annealer.Dists)
 	t:=annealer.initialTemperature(s,annealer.InitTemp)
@@ -65,14 +69,13 @@ func (annealer *Annealer) AnnealWithSeed(seed int64){
 	annealer.tresholdAccept(t,s,seed)
 }
 
-//TODO: Play with k
 func (annealer *Annealer) tresholdAccept(t float64, s *Solution, seed int64){
-	//InitTemp=initialTemperature()
 	annealer.BestSolution.Cost=math.Inf(0)
 	annealer.BestSolution.Path=""
 	annealer.BestSolution.Feasible=""
 	var p float64
 	stop:=false
+	//Sweep initial solution,
 	if annealer.Sweeping{
 		annealer.sweepSolution(s)
 	}
@@ -80,40 +83,53 @@ func (annealer *Annealer) tresholdAccept(t float64, s *Solution, seed int64){
 		q:=math.Inf(0)
 		for p<=q&&(!stop) {
 			q=p
-			// fmt.Println("Entering calculate batch",k)
 			p,s,stop=annealer.calculateBatch(t,s)
 		}
 		//fmt.Printf("Decreasing temperature t: %f by %f: %f\n",t,annealer.Phi,annealer.Phi*t)
 		t*=annealer.Phi
 	}
-	if annealer.BestSolution.Cost<0.27{
-		fmt.Printf("\nSeed: %d, Solution: %s\n",seed,annealer.BestSolution)
+
+	//Sweep for the last time.
+	if annealer.Sweeping{
+		annealer.sweepSolution(s)
 	}
+	fmt.Printf("\nSeed: %d, Solution: %s\n",seed,annealer.BestSolution)
 }
 
-//batchSize*100??? 
 func (annealer *Annealer) calculateBatch(t float64, sol *Solution) (float64,*Solution,bool){
 	var r,sPrimeCost float64
 	c:=0
 	var s *Solution
 	s=sol
 	k:=0
-	for k=0;c<annealer.BatchSize&&k<annealer.BatchSize*100;k++ {
+	//for k=0;c<annealer.BatchSize&&k<annealer.BatchSize*annealer.BatchSize;k++ {
+	for k=0;c<annealer.BatchSize&&k<annealer.BatchSize*annealer.BatchLimit;k++ {
 		i,j:=generateRandomIdx(len(annealer.Path),annealer.Rng)
 		sPrimeCost=s.PeekNeighborCost(i,j)
 		if sPrimeCost<=(s.Cost+t) {
 			s=s.Neighbor(i,j,sPrimeCost)
 			c++
 			r+=sPrimeCost
+			if annealer.VeryVerbose {
+				if sPrimeCost<annealer.BestSolution.Cost {
+					//annealer.GraphCosts=append(annealer.GraphCosts,-sPrimeCost)
+					fmt.Printf("E: %f\n",sPrimeCost)
+				} else {
+					//annealer.GraphCosts=append(annealer.GraphCosts,sPrimeCost)
+					fmt.Printf("E: %f\n",sPrimeCost)
+				}
+			}
 			if sPrimeCost<annealer.BestSolution.Cost {
 				annealer.BestSolution=NewSolutionLite(s)
 				if annealer.Sweeping {
+					//fmt.Printf("Sweeping with k=%d...\n",k)
 					annealer.sweepSolution(s)
 				}
 			}
 		}
 	}
-	return (r/float64(annealer.BatchSize)),s,k>=(annealer.BatchSize*100)-1
+	return (r/float64(annealer.BatchSize)),s,k>=(annealer.BatchSize*annealer.BatchLimit)-1
+	//return (r/float64(annealer.BatchSize)),s,k>=(annealer.BatchSize*annealer.BatchSize)-1
 }
 
 //ask the following!!
@@ -127,6 +143,9 @@ func (annealer *Annealer) sweepSolution(sol *Solution){
 			if sPrimeCost < annealer.BestSolution.Cost {
 				sol=sol.Neighbor(i,j,sPrimeCost)
 				annealer.BestSolution=NewSolutionLite(sol)
+				if annealer.VeryVerbose {
+					fmt.Printf("E: %f\n",sPrimeCost)
+				}
 			}
 		}
 	}

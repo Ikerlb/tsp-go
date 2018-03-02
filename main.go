@@ -29,6 +29,7 @@ type Settings struct{
     AcceptedPercent float64 `json:"AcceptedPercent"`
     InitialTempN    int     `json:"InitialTempN"`
     PathToAnneal    []int   `json:"PathToAnneal"`
+    BatchLimit      int     `json:"BatchLimit"` 
 }
 
 const citiesLength=1092
@@ -36,7 +37,7 @@ const citiesLength=1092
 var (
         SeedNumber      int    //Number of seeds to run.
         FirstSeed       int    //Defines range of seeds: [FirstSeed,FirstSeed+SeedNumber]
-        CreateGraphs    bool   //Create annealing graph in util/graphs. (1 per seed)
+        VeryVerbose     bool   //used for plotting
         Visualizer      string //json file with 'solution' to parse and show in map
         SettingsFile    string //json file with annealer parameters and cities set. defaults to ./settings.json
         Cities          []tspvis.City
@@ -51,6 +52,7 @@ var (
         InitialTempN    int
         PathToAnneal    []int     
         Sweeping        bool
+        BatchLimit      int
 )
 
 func main() {
@@ -60,27 +62,27 @@ func main() {
 
     //ok := true
     //ok = errorMessage("ERROR: input argument required")     
-    fmt.Println("Extracting info from database...");
+    fmt.Println("exctracting cities connections from database ./db/tsp.db");
     getDistances()
-    fmt.Println("Succesfully extracted adjacency matrix from ./db/tsp.db")
+    // fmt.Println("Succesfully extracted adjacency matrix from ./db/tsp.db")
 
     //if visualizer has a path, show map with its input.
     if Visualizer != "" {
         getCities()
         parseSolution()
-        fmt.Printf("Succesfully extracted Cities information from db ./db/tsp.db\n")
+        //fmt.Printf("Succesfully extracted Cities information from db ./db/tsp.db\n")
         tspvis.Visualizer(Cities,Distances,SolutionIds)
         os.Exit(3) //exit as you are in visualization mode.
     }
-    fmt.Println("Extracting parameters from settings file:",SettingsFile)
+    fmt.Println("reading",SettingsFile)
     parseSettings()
     //NewAnnealer(path []int,dists [][]float64,phi,initTemp, epsilonT, epsilonP, acceptedPercent float64, batchSize, initialTempN int)
-    ann:=tsp.NewAnnealer(PathToAnneal, Distances, Phi, InitTemp, EpsilonT, EpsilonP, AcceptedPercent, BatchSize, InitialTempN, Sweeping)
+    ann:=tsp.NewAnnealer(PathToAnneal, Distances, Phi, InitTemp, EpsilonT, EpsilonP, AcceptedPercent, BatchSize, InitialTempN, BatchLimit, Sweeping, VeryVerbose)
     for i := FirstSeed; i < FirstSeed+SeedNumber; i++ {
         start:=time.Now()
         ann.AnnealWithSeed(int64(i))
         t:=time.Now()
-        fmt.Printf("Seed %d took %v seconds.\n",i,t.Sub(start))
+        fmt.Printf("seed %d ---> %v seconds.\n",i,t.Sub(start))
     }
 }
 
@@ -88,11 +90,10 @@ func main() {
 * Init function. Parses flags.
 */
 func init() {
-    //IDEA: -vis or -v command flag ignores the rest of the flags and opens visualizer GUI
     flag.IntVar(&SeedNumber, "n", 1, "number of seeds to run, defaults to 1")
     flag.IntVar(&FirstSeed, "f", 0, "first seed to run. defines range [s,n+s). defaults to 0")
-    flag.BoolVar(&CreateGraphs, "g", false, "create annealing graphs in util/graphs (1 per seed)")
-    flag.StringVar(&Visualizer, "v", "", "Json file with 'solution' to parse and show in map.")
+    flag.BoolVar(&VeryVerbose, "vv", false, "output very verbose log into stdout")
+    flag.StringVar(&Visualizer, "vis", "", "Json file with 'solution' to parse and show in map.")
     flag.StringVar(&SettingsFile, "s", "settings.json", "Json file with annealer parameters and cities set to solve.")
     flag.BoolVar(&Sweeping, "b", false, "anneal with sweeping. defaults to false.")
 }
@@ -129,6 +130,7 @@ func getDistances(){
 
 //close db, rows
 func getCities(){
+    fmt.Println("extracting cities information from database ./db/tsp.db")
     db, err := sql.Open("sqlite3", "db/tsp.db")
     check(err)
     rows, err := db.Query("SELECT id,name,country,latitude,longitude FROM CITIES")
@@ -144,13 +146,14 @@ func getCities(){
 func parseSettings(){
     file, err := os.Open(SettingsFile)
     check(err)
-    fmt.Println("Successfully Opened",SettingsFile)
+    //fmt.Println("Successfully Opened",SettingsFile)
     sett:=Settings{}
     decoder := json.NewDecoder(file) 
     err = decoder.Decode(&sett) 
     check(err)
     Phi=sett.Phi
     BatchSize=sett.BatchSize
+    BatchLimit=sett.BatchLimit
     InitTemp=sett.InitTemp
     EpsilonT=sett.EpsilonT
     EpsilonP=sett.EpsilonP
@@ -159,13 +162,13 @@ func parseSettings(){
     PathToAnneal=sett.PathToAnneal
     // defer the closing of our jsonFile so that we can parse it later on
     file.Close()
-    fmt.Println("Succesfully extracted Settings:",sett," from json file:",SettingsFile)
+    //fmt.Println("reading",SettingsFile)
 }
 
 func parseSolution(){
+    fmt.Println("reading",Visualizer)
     file, err := os.Open(Visualizer)
     check(err)
-    fmt.Println("Successfully Opened",Visualizer)
     sol:=SolutionSet{}
     decoder := json.NewDecoder(file) 
     err = decoder.Decode(&sol) 
@@ -173,5 +176,5 @@ func parseSolution(){
     SolutionIds=sol.Set
     // defer the closing of our jsonFile so that we can parse it later on
     file.Close()
-    fmt.Println("Succesfully extracted SolutionIds:",SolutionIds,"from json file:",Visualizer)
+    //fmt.Println("Succesfully extracted SolutionIds:",SolutionIds,"from json file:",Visualizer)
 }

@@ -109,6 +109,7 @@ func (sol *Solution) PeekNeighborCost(i,j int) float64 {
 
 }
 
+//use isConnected func
 func (sol *Solution) calculateNeighborFeas(i,j int){
 	//sol.Feasible:=sol.Feasible.Clone()
 	size:=len(sol.Path)-1

@@ -1,0 +1,58 @@
+<!DOCTYPE HTML>
+<html>
+<head>  
+  <script type="text/javascript">
+  window.onload = function () {
+
+    var chart = new CanvasJS.Chart("chartContainer",
+    {
+      zoomEnabled: true, 
+      title:{
+        text: "Seed" 
+      },
+      axisY:{
+        includeZero: false
+      },
+      data: data,  // random generator below
+      
+   });
+
+    chart.render();
+  }
+       
+   var limit = 3000000;    //increase number of dataPoints by increasing this
+    
+    var y = 0;
+    var data = []; 
+    var dataSeries = { 
+      type: "line",
+     };
+    var dataPoints = [];
+    for (var i = 0; i < limit; i += 1) {
+        y += (Math.random() * 10 - 5);
+        if (i%1000==0){
+         dataPoints.push({
+          x: i,
+          y: y,
+          color: "Red",
+          markerSize: 5,
+          markerType: "circle",             
+         });
+        }
+        else {
+         dataPoints.push({
+          x: i,
+          y: y,             
+         });
+        }
+      }
+     dataSeries.dataPoints = dataPoints;
+     data.push(dataSeries);               
+  
+  </script>
+  <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script></head>
+  <body>
+    <div id="chartContainer" style="height: 100%; width: 100%;">
+    </div>
+  </body>
+  </html>

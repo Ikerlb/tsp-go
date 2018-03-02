@@ -1,6 +1,7 @@
 {
     "Phi": 0.99,
     "BatchSize": 2000,
+    "BatchLimit": 300,
     "InitTemp": 8.0,
     "EpsilonT": 0.00002,
     "EpsilonP": 0.004,
