@@ -9,25 +9,25 @@ import (
 )
 
 type SolutionLite struct{
-	Path 	 string
- 	Cost 	 float64
+	Path	 string
+	Cost	 float64
 	Feasible string
 }
 
 type Annealer struct{
-	Rng				*rand.Rand
-	Path 	  		[]int
-	Dists  			[][]float64
-	Phi  	  		float64
-	BatchSize 		int
-	InitTemp  		float64
-	EpsilonT  		float64
-	EpsilonP  		float64
-	AcceptedPercent float64
-	InitialTempN	int
-	BestSolution 	*SolutionLite
+	Rng			*rand.Rand
+	Path			[]int
+	Dists			[][]float64
+	Phi			float64
+	BatchSize		int
+	InitTemp		float64
+	EpsilonT		float64
+	EpsilonP		float64
+	AcceptedPercent		float64
+	InitialTempN		int
+	BestSolution		*SolutionLite
 	Sweeping		bool
-	VeryVerbose 	bool
+	VeryVerbose		bool
 	BatchLimit		int
 	// CurrentSolution *Solution
 }
