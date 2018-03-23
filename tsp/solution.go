@@ -5,6 +5,8 @@ import (
 	"github.com/willf/bitset"
 )
 
+var Dists [][]float64
+
 type Solution struct{
 	avgDist	 float64
 	maxDist	 float64
@@ -17,10 +19,10 @@ type Solution struct{
 const discFactor float64 = 50.0 
 
 
-func NewSolution(path []int, dists [][]float64) *Solution{
+func NewSolution(path []int) *Solution{
 	sol:=Solution{}
 	sol.Path=path
-	sol.dists=dists
+	//sol.dists=dists
 	sol.Feasible=bitset.New(uint(len(path)))
 	sol.calculateMaxAvg()
 	sol.calculateInitialCost()
@@ -33,7 +35,7 @@ func (sol *Solution) calculateMaxAvg(){
 	var c int
 	for i := 0; i < len(sol.Path); i++ {
 		for j := i+1; j < len(sol.Path); j++ {
-			d:=sol.dists[sol.Path[i]][sol.Path[j]]
+			d:=Dists[sol.Path[i]][sol.Path[j]]
 			if d > 0.0{
 				if d>max {
 					max=d
@@ -53,7 +55,7 @@ func (sol *Solution) calculateInitialCost(){
 	size:=len(sol.Path)-1
 	for i := 0; i < size; i++ {
 		//if path[i] isn't connected to path[i+1] we set feasible[i]
-		if sol.dists[sol.Path[i]][sol.Path[i+1]] == 0 {
+		if Dists[sol.Path[i]][sol.Path[i+1]] == 0 {
 			sol.Feasible.Set(uint(i))
 		}
 		sum+=sol.augmentedWeight(i,i+1)
@@ -64,7 +66,7 @@ func (sol *Solution) calculateInitialCost(){
 
 func (sol *Solution) augmentedWeight(i, j int) (dist float64){
 	id1,id2:=sol.Path[i],sol.Path[j]
-	dist=sol.dists[id1][id2]
+	dist=Dists[id1][id2]
 	if dist==0 {
 		dist=sol.maxDist
 	}
@@ -117,14 +119,14 @@ func (sol *Solution) calculateNeighborFeas(i,j int){
 		low:=Min(i,j)
 		high:=Max(i,j)
 		if low!=0 {
-			if sol.dists[sol.Path[low-1]][sol.Path[high]]==0 {
+			if Dists[sol.Path[low-1]][sol.Path[high]]==0 {
 				sol.Feasible.Set(uint(low-1))
 			} else {
 				sol.Feasible.Clear(uint(low-1))
 			}
 		}
 		if high!=size {
-			if sol.dists[sol.Path[low]][sol.Path[high+1]]==0 {
+			if Dists[sol.Path[low]][sol.Path[high+1]]==0 {
 				sol.Feasible.Set(uint(high))
 			} else {
 				sol.Feasible.Clear(uint(high))
@@ -132,28 +134,28 @@ func (sol *Solution) calculateNeighborFeas(i,j int){
 		}
 	} else {
 		if i!=0 {
-			if sol.dists[sol.Path[i-1]][sol.Path[j]]==0 {
+			if Dists[sol.Path[i-1]][sol.Path[j]]==0 {
 				sol.Feasible.Set(uint(i-1))
 			} else {
 				sol.Feasible.Clear(uint(i-1))
 			}
 		}
 		if i!=size {
-			if sol.dists[sol.Path[j]][sol.Path[i+1]]==0 {
+			if Dists[sol.Path[j]][sol.Path[i+1]]==0 {
 				sol.Feasible.Set(uint(i))
 			} else {
 				sol.Feasible.Clear(uint(i))
 			}
 		}
 		if j!=0 {
-			if sol.dists[sol.Path[j-1]][sol.Path[i]]==0 {
+			if Dists[sol.Path[j-1]][sol.Path[i]]==0 {
 				sol.Feasible.Set(uint(j-1))
 			} else {
 				sol.Feasible.Clear(uint(j-1))
 			}
 		}
 		if j!=size {
-			if sol.dists[sol.Path[i]][sol.Path[j+1]]==0 {
+			if Dists[sol.Path[i]][sol.Path[j+1]]==0 {
 				sol.Feasible.Set(uint(j))
 			} else {
 				sol.Feasible.Clear(uint(j))
@@ -165,7 +167,7 @@ func (sol *Solution) calculateNeighborFeas(i,j int){
 
 func (sol *Solution) isConnected(i,j int) bool{
 	id1,id2:=sol.Path[i],sol.Path[j]
-	return sol.dists[id1][id2]!=0
+	return Dists[id1][id2]!=0
 }
 
 
