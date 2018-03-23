@@ -42,6 +42,7 @@ var (
         VeryVerbose     bool   //used for plotting
         Visualizer      string //json file with 'solution' to parse and show in map
         SettingsFile    string //json file with annealer parameters and cities set. defaults to ./settings.json
+        Workers         int    //number of workers. defaults to min(runtime.GOMAXPROCS(0),runtime.NumCPU())
         Cities          []tspvis.City
         Distances       [][]float64
         SolutionIds     []int
@@ -90,7 +91,7 @@ func main() {
     results:=make(chan string, SeedNumber)
 
     //make workers, one for each core 
-    for w:=1;w<=maxParallelism();w++  {
+    for w:=1;w<=Workers;w++  {
         go worker(w,jobs,results)
     }
 
@@ -140,9 +141,10 @@ func runAnnealer(i int) string{
 func init() {
     flag.IntVar(&SeedNumber, "n", 1, "number of seeds to run, defaults to 1")
     flag.IntVar(&FirstSeed, "f", 0, "first seed to run. defines range [s,n+s). defaults to 0")
+    flag.IntVar(&Workers,"w",maxParallelism(),"number of workers to run. defaults to defaults to min(runtime.GOMAXPROCS(0),runtime.NumCPU())")
     flag.BoolVar(&VeryVerbose, "vv", false, "output very verbose log into stdout")
     flag.StringVar(&Visualizer, "vis", "", "Json file with 'solution' to parse and show in map.")
-    flag.StringVar(&SettingsFile, "s", "settings.json", "Json file with annealer parameters and cities set to solve.")
+    flag.StringVar(&SettingsFile, "s", "util/set/settings.json", "Json file with annealer parameters and cities set to solve.")
     flag.BoolVar(&Sweeping, "b", false, "anneal with sweeping. defaults to false.")
 }
 
